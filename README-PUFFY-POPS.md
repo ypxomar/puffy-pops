@@ -42,9 +42,34 @@ npm install
 npm run dev
 ```
 
+The dev server is published at `http://localhost:5173`. It already binds `0.0.0.0`, so other devices on your network can open `http://<your-computer-ip>:5173`.
+
 Customer pages: `/`, `/menu`, `/locations`, `/story`, `/checkout`, `/track-order`, and token-protected `/receipt/...`.
 
 Old management page addresses such as `/admin`, `/developers` and `/pos` intentionally return 404.
+
+## Run the production build on a local server
+
+`npm start` (`vinext start`) runs the built Worker in plain Node, which has no
+Cloudflare bindings, so every page and API answers `500` with
+`Cannot read properties of undefined (reading 'DB')`. Use Wrangler instead — it
+runs the built Worker in `workerd` with a local D1 database, a local R2 bucket
+and the asset binding, exactly like Cloudflare:
+
+```bash
+npm run build
+npm run start:local            # http://localhost:3000
+npm run start:local -- --port 8080 --ip 0.0.0.0   # LAN / custom port
+```
+
+The local database and bucket are created on first use under `.wrangler/state`,
+and the app creates its own tables and seeds the catalog automatically, so no
+migration step is needed locally. Wipe `.wrangler/state` for a clean slate.
+
+Optional: put local-only secrets such as `ADMIN_SESSION_SECRET`,
+`GOOGLE_MAPS_BROWSER_KEY` and `GOOGLE_MAPS_SERVER_KEY` in a `.dev.vars` file at
+the project root (git-ignored). The public storefront and the soft-serve landing
+page run without them; the private management APIs do not.
 
 ## Build and verify
 
