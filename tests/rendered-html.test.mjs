@@ -87,6 +87,23 @@ test("renders the storefront without a public admin link", async () => {
   assert.match(html, /\/api\/media\?slot=site-logo/i);
   assert.match(html, /class="[^"]*ss-site-shell/i);
   assert.match(html, /Your new<[^>]*> soft spot\./i);
+
+  // One page, one header and one footer: the soft-serve landing and the
+  // storefront home share the same chrome instead of rendering two of each.
+  assert.equal((html.match(/<header/g) ?? []).length, 1);
+  assert.equal((html.match(/<footer/g) ?? []).length, 1);
+  assert.doesNotMatch(html, /ss-site-header|ss-site-footer|ss-footer-wordmark|ss-mobile-nav/);
+  assert.match(html, /Spreading joy, one bite at a time\./);
+
+  // Landing sections plus the storefront bands they were merged with.
+  for (const marker of ["ss-hero", "ss-story-section", "ss-flavours-section", "cinema-highlights", "puffy-order-story", "ss-moments-section", "ss-locations-section", "cinema-proof", "cinema-closing", "ss-signoff"]) {
+    assert.match(html, new RegExp(marker), marker);
+  }
+
+  // In-page navigation on "/", route navigation everywhere else.
+  assert.match(html, /<a href="#flavours">Flavours<\/a>/);
+  assert.match(html, /<a href="\/menu">Full menu<\/a>/);
+
   assert.match(html, /<link[^>]+rel=["']stylesheet["'][^>]+href=["']\/assets\/storefront\.css["']/i);
   assert.match(
     html,

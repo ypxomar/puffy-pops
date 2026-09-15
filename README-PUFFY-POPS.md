@@ -4,7 +4,7 @@ Source-only Cloudflare Worker website for public ordering. This build deliberate
 
 ## Public features
 
-- Interactive soft-serve landing page as the home page (`/`): swap the four soft-serve flavours, follow the travelling swirl through the scroll story, pick a Puffy place and hand the order to the branch on WhatsApp or the full menu.
+- One merged home page (`/`): the interactive soft-serve landing carries the storefront header and footer, so there is a single header, a single footer and a single order path across the whole site. Swap the four soft-serve flavours, follow the travelling swirl through the scroll story, browse the favourites rail, read how ordering works, pick a Puffy place and hand the order to the branch on WhatsApp or the full menu.
 - Cairo/Alexandria menu, locations, story, checkout, tracking and receipt pages.
 - Apple-inspired cinematic pacing in the Puffy Pops brand system: hero storytelling, one meaningful sticky chapter, a manual favorites rail, adaptive navigation and restrained Motion-powered transitions.
 - Complete reduced-motion fallbacks that remove parallax, pinned transformations and automatic large motion without hiding content.
@@ -81,9 +81,10 @@ npm run validate:artifact
 
 ## Main files
 
-- `app/page.tsx` — the home route, which serves the soft-serve landing page.
-- `app/soft-serve/` — the landing page source: `SoftServeLanding.tsx`, `FlavourPicker.tsx`, `Product.tsx` (canvas product isolation), `OrderDialog.tsx` and `landing-data.ts`.
-- `app/soft-serve-landing.css` — landing styles, namespaced with the `ss-` prefix so they cannot collide with `app/globals.css`. `scripts/sync-css.mjs` copies both stylesheets into `public/assets/`.
+- `app/page.tsx` — the home route, which serves the merged soft-serve landing page.
+- `app/soft-serve/` — the landing page source: `SoftServeLanding.tsx` (hero, story, flavours, favourites rail, order steps, moments, locations, proof, closing), `FlavourPicker.tsx`, `Product.tsx` (canvas product isolation), `OrderDialog.tsx` and `landing-data.ts`.
+- `app/soft-serve-landing.css` — landing styles, namespaced with the `ss-` prefix so they cannot collide with `app/globals.css`. `scripts/sync-css.mjs` copies both stylesheets into `public/assets/`. The bands taken from the storefront home (`.cinema-highlights`, `.puffy-order-story`, `.cinema-proof`, `.cinema-closing`) keep their styles in `app/globals.css`, so they look identical to the pages around them.
+- Brand assets: the logo lives at `public/puffy-pops-logo.png` and is managed in Puffy Control through the `site-logo` media slot. Typography — `Shrikhand` for soft-serve headings, `DM Serif Display` for storefront headings, `Caveat` for handwritten notes and `Pacifico` (the rounded script of the logo) for brand sign-off moments.
 - `app/catalog.ts` — city menus, branch addresses and coordinates.
 - `app/location.ts` — nearest branch and delivery-fee formula.
 - `app/components/DeliveryMap.tsx` — customer map and draggable pin.

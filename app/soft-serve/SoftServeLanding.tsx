@@ -1,11 +1,14 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element -- The brand logo comes from the CMS media route. */
+/* eslint-disable @next/next/no-img-element -- The brand mark comes from the CMS media route with a static fallback. */
 
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion, useScroll, useTransform } from "motion/react";
-import { ArrowDown, ArrowDownRight, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, Menu, Minus, Plus, X } from "lucide-react";
+import { ArrowDown, ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, Minus, Plus } from "lucide-react";
+import SiteFooter from "../components/SiteFooter";
+import SiteHeader from "../components/SiteHeader";
+import ScrollProgress from "../components/ScrollProgress";
 import { SITE_LINKS, branches, flavours, getMapUrl, PHONE_HREF } from "./landing-data";
 import type { City, Flavour } from "./landing-data";
 import FlavourPicker from "./FlavourPicker";
@@ -13,75 +16,67 @@ import { LocalProduct, preloadProducts, ProductDisplay } from "./Product";
 import OrderDialog from "./OrderDialog";
 
 const FLAVOUR_STORAGE_KEY = "puffy-soft-serve-flavour";
+const premiumEase = [0.22, 1, 0.36, 1] as const;
 
-function Instagram({ size = 16 }: { size?: number }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r=".8" fill="currentColor" stroke="none" /></svg>;
-}
+/** In-page anchors for the shared site header while the customer is on "/". */
+const heroSections = [
+  ["#soft-serve", "The soft serve"],
+  ["#flavours", "Flavours"],
+  ["#find-us", "Find us"],
+] as const;
+
+const highlights = [
+  { name: "Nutella", label: "The crowd favorite", image: "/api/media?slot=home-favorite-1", tone: "orange" },
+  { name: "White Chocolate", label: "Soft, sweet, unmistakable", image: "/api/media?slot=home-favorite-2", tone: "green" },
+  { name: "Caramel", label: "Golden and generous", image: "/api/media?slot=home-favorite-3", tone: "wine" },
+] as const;
+
+const orderSteps = [
+  { no: "01", title: "Choose the bites", copy: "Browse the right city menu, then pick a size and flavours." },
+  { no: "02", title: "Drop the pin", copy: "Put the pin at the delivery entrance so distance and fees stay accurate." },
+  { no: "03", title: "We route it", copy: "The order goes to the correct Puffy Pops branch with every choice attached." },
+] as const;
 
 function Sparkle({ className = "" }: { className?: string }) {
   return <svg className={`ss-sparkle ${className}`} viewBox="0 0 80 90" fill="none" aria-hidden="true"><path d="M42 6C39 31 32 39 7 45C34 46 40 53 42 83C47 56 52 47 74 43C50 39 45 30 42 6Z" stroke="currentColor" strokeWidth="2.6" strokeLinejoin="round" /></svg>;
 }
 
-function BrandLogo() {
-  const [failed, setFailed] = useState(false);
+/**
+ * The brand mark. Prefers the logo the owner manages in Puffy Control, falls
+ * back to the packaged logo file, and finally to the script wordmark.
+ */
+function BrandMark() {
+  const [source, setSource] = useState<"cms" | "static" | "text">("cms");
   return (
-    <a className="ss-brand-logo" href="#top" aria-label="Puffy Pops home">
-      {failed ? <span>Puffy Pops</span> : <img src="/api/media?slot=site-logo" alt="Puffy Pops, spreading joy" onError={() => setFailed(true)} />}
-    </a>
+    <>
+      {source === "cms" && <img className="ss-hero-logo" src="/api/media?slot=site-logo" alt="Puffy Pops · spreading joy" onError={() => setSource("static")} />}
+      {source === "static" && <img className="ss-hero-logo" src="/puffy-pops-logo.png" alt="Puffy Pops · spreading joy" onError={() => setSource("text")} />}
+      {source === "text" && <span className="ss-hero-wordmark">Puffy Pops<span className="ss-signoff-registered">&reg;</span></span>}
+    </>
   );
 }
 
-const sectionLinks = [
-  { href: "#soft-serve", label: "The soft serve" },
-  { href: "#our-story", label: "The Puffy feeling" },
-  { href: "#find-us", label: "Find your Puffy" },
-] as const;
-
-function Header({ onOrder }: { onOrder: () => void }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  useEffect(() => {
-    if (!menuOpen) return;
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setMenuOpen(false); };
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [menuOpen]);
-  return (
-    <header className="ss-site-header">
-      <div className="ss-header-inner">
-        <BrandLogo />
-        <nav className="ss-desktop-nav" aria-label="Main navigation">
-          {sectionLinks.map((link) => <a href={link.href} key={link.href}>{link.label}</a>)}
-          <a href={SITE_LINKS.menu}>Full menu</a>
-        </nav>
-        <div className="ss-header-actions">
-          <button className="ss-button ss-button-primary ss-header-cta" onClick={() => { setMenuOpen(false); onOrder(); }}>Get your swirl <ArrowUpRight size={17} /></button>
-          <button type="button" className="ss-mobile-menu-button ss-icon-button" aria-label={menuOpen ? "Close navigation" : "Open navigation"} aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => setMenuOpen((value) => !value)}>{menuOpen ? <X size={23} /> : <Menu size={23} />}</button>
-        </div>
-      </div>
-      <AnimatePresence>
-        {menuOpen && (
-          <motion.nav id="mobile-navigation" className="ss-mobile-nav" aria-label="Mobile navigation" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}>
-            {sectionLinks.map((link) => <a href={link.href} key={link.href} onClick={() => setMenuOpen(false)}>{link.label}<ArrowUpRight size={20} /></a>)}
-            <a href={SITE_LINKS.menu} onClick={() => setMenuOpen(false)}>Full menu<ArrowUpRight size={20} /></a>
-            <a href="#flavours" onClick={() => setMenuOpen(false)}>Pick your flavour<ArrowUpRight size={20} /></a>
-          </motion.nav>
-        )}
-      </AnimatePresence>
-    </header>
-  );
-}
-
-function Hero({ flavour, onSelect }: { flavour: Flavour; onSelect: (id: string) => void }) {
+function Hero({ flavour, onSelect, onOrder }: { flavour: Flavour; onSelect: (id: string) => void; onOrder: () => void }) {
   return (
     <section id="soft-serve" className="ss-hero" aria-labelledby="hero-title">
       <svg className="ss-hero-waves" viewBox="0 0 1440 900" fill="none" preserveAspectRatio="none" aria-hidden="true">
         <path d="M-100 807C173 615 327 859 675 756C992 662 1171 651 1550 760V1000H-100Z" fill="var(--ss-tone)" fillOpacity=".23" />
         <path d="M-120 807C143 620 320 855 660 760C1009 662 1178 649 1570 769" /><path d="M-120 838C141 650 323 885 667 790C1016 692 1184 679 1570 799" /><path d="M-120 869C141 682 325 915 674 820C1023 722 1190 709 1570 829" />
       </svg>
-      <motion.div className="ss-hero-brand" initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}><p className="ss-eyebrow">INTRODUCING OUR ALL-NEW SOFT SERVE</p><h1 id="hero-title">Puffy Pops<span className="ss-brand-registered">&reg;</span></h1></motion.div>
+      <motion.div className="ss-hero-brand" initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.85, ease: premiumEase }}>
+        <p className="ss-eyebrow">INTRODUCING OUR ALL-NEW SOFT SERVE</p>
+        <h1 id="hero-title" className="ss-hero-title"><BrandMark /></h1>
+      </motion.div>
       <Sparkle className="ss-hero-sparkle-left" /><Sparkle className="ss-hero-sparkle-right" />
       <LocalProduct flavour={flavour} className="ss-hero-local-product" />
-      <motion.div className="ss-hero-intro" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18, duration: 0.75 }}><h2>Your new<br className="ss-desktop-break" /> soft spot.</h2><p>Meet our all-new soft serve.<br />A little swirl. A whole lot of joy.</p><a className="ss-button ss-button-primary" href="#flavours">Find your flavour <ArrowDownRight size={19} /></a></motion.div>
+      <motion.div className="ss-hero-intro" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18, duration: 0.75 }}>
+        <h2>Your new<br className="ss-desktop-break" /> soft spot.</h2>
+        <p>Meet our all-new soft serve.<br />A little swirl. A whole lot of joy.</p>
+        <div className="ss-hero-actions">
+          <a className="ss-button ss-button-primary" href="#flavours">Find your flavour <ArrowDownRight size={19} /></a>
+          <button type="button" className="ss-button ss-button-outline" onClick={onOrder}>Start an order <ArrowUpRight size={17} /></button>
+        </div>
+      </motion.div>
       <motion.div className="ss-hero-flavours" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.75 }}><p className="ss-eyebrow">WHAT&apos;S YOUR SWIRL?</p><FlavourPicker selected={flavour.id} onSelect={onSelect} /></motion.div>
       <a href="#our-story" className="ss-scroll-cue"><span className="ss-scroll-cue-icon"><ArrowDown size={16} /></span><span>GOOD THINGS THIS WAY</span></a>
       <span className="ss-hero-bottom-note">Made of happy.</span>
@@ -143,10 +138,57 @@ function ProductJourney({ flavour, onSelect, onOrder }: { flavour: Flavour; onSe
   return (
     <div ref={journeyRef} className="ss-product-journey">
       <div className="ss-product-stage" aria-hidden="true"><div className="ss-product-stage-sticky"><div className="ss-product-home"><motion.div className="ss-travelling-product" style={{ x, y, rotate, scale }}><div className="ss-floating-product"><ProductDisplay flavour={flavour} /></div></motion.div></div></div></div>
-      <Hero flavour={flavour} onSelect={onSelect} />
+      <Hero flavour={flavour} onSelect={onSelect} onOrder={onOrder} />
       <Story flavour={flavour} />
       <FlavourSection flavour={flavour} onSelect={onSelect} onOrder={onOrder} />
     </div>
+  );
+}
+
+/** The storefront favourites rail: real box items that link into the local menu. */
+function FavouritesRail() {
+  const reduceMotion = useReducedMotion();
+  const railRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+  const moveRail = (direction: -1 | 1) => {
+    railRef.current?.scrollBy({ left: direction * Math.min(window.innerWidth * 0.72, 760), behavior: reduceMotion ? "auto" : "smooth" });
+  };
+  const updateIndex = () => {
+    const rail = railRef.current;
+    const firstCard = rail?.querySelector<HTMLElement>(".cinema-highlight-card");
+    if (!rail || !firstCard) return;
+    const gap = Number.parseFloat(getComputedStyle(rail).columnGap || "0");
+    setActive(Math.max(0, Math.min(highlights.length - 1, Math.round(rail.scrollLeft / (firstCard.offsetWidth + gap)))));
+  };
+  return (
+    <section className="cinema-highlights" aria-labelledby="highlight-title">
+      <div className="cinema-section-heading">
+        <div><p className="cinema-kicker">A few favourites</p><h2 id="highlight-title">Start with a classic.<br /><em>Then make it yours.</em></h2></div>
+        <div className="cinema-rail-controls"><span aria-live="polite">0{active + 1} / 0{highlights.length}</span><button type="button" onClick={() => moveRail(-1)} aria-label="Previous favourite">&larr;</button><button type="button" onClick={() => moveRail(1)} aria-label="Next favourite">&rarr;</button></div>
+      </div>
+      <div className="cinema-highlight-rail" ref={railRef} onScroll={updateIndex} role="region" aria-roledescription="carousel" aria-label="Puffy Pops favourites">
+        {highlights.map((item, index) => <motion.article className={`cinema-highlight-card ${item.tone}`} key={item.name} initial={reduceMotion ? false : { opacity: 0, scale: 0.94, clipPath: "inset(8% 8% 8% 8% round 42px)" }} whileInView={{ opacity: 1, scale: 1, clipPath: "inset(0% 0% 0% 0% round 42px)" }} viewport={{ once: true, amount: 0.25 }} transition={{ duration: 0.85, delay: index * 0.08, ease: premiumEase }}>
+          <div className="cinema-highlight-image"><motion.img src={item.image} alt={`${item.name} Puffy Pops`} loading="lazy" whileHover={reduceMotion ? undefined : { scale: 1.055 }} transition={{ duration: 0.6, ease: premiumEase }} /></div>
+          <div><span>{item.label}</span><h3>{item.name}</h3><a href={SITE_LINKS.menu}>See it on the menu <i>&#8599;</i></a></div>
+        </motion.article>)}
+      </div>
+    </section>
+  );
+}
+
+/** The storefront "how ordering works" band, kept from the original home page. */
+function OrderSteps() {
+  const reduceMotion = useReducedMotion();
+  return (
+    <section className="puffy-order-story" aria-label="How a Puffy Pops order comes together">
+      <div className="puffy-order-story-heading"><p className="cinema-kicker">One box. Three easy moves.</p><h2>No scroll tricks.<br /><em>Just pick, pin and pop.</em></h2></div>
+      <div className="puffy-order-story-layout">
+        <motion.figure initial={reduceMotion ? false : { opacity: 0, scale: 0.96 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true, amount: 0.25 }} transition={{ duration: 0.8, ease: premiumEase }}><img src="/api/media?slot=story-main" alt="An assorted Puffy Pops box" loading="lazy" /></motion.figure>
+        <div className="puffy-order-steps">
+          {orderSteps.map((step, index) => <motion.article key={step.no} initial={reduceMotion ? false : { opacity: 0, x: 28 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, amount: 0.65 }} transition={{ duration: 0.58, delay: index * 0.07, ease: premiumEase }}><span>{step.no}</span><div><h3>{step.title}</h3><p>{step.copy}</p></div><i>&#8599;</i></motion.article>)}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -182,22 +224,34 @@ function Locations() {
   );
 }
 
-function Footer() {
+function Proof() {
+  const reduceMotion = useReducedMotion();
+  const facts = [
+    { value: String(branches.length), label: "branches across Egypt" },
+    { value: "2", label: "city-specific menus" },
+    { value: "1", label: "exact delivery pin" },
+  ] as const;
   return (
-    <footer className="ss-site-footer">
-      <div className="ss-footer-top">
-        <p>Spreading joy. One swirl at a time.</p>
-        <nav aria-label="Footer navigation">
-          <a href={SITE_LINKS.menu}>The full menu <ArrowUpRight size={14} /></a>
-          <a href={SITE_LINKS.story}>Our story <ArrowUpRight size={14} /></a>
-          <a href={SITE_LINKS.locations}>Branches <ArrowUpRight size={14} /></a>
-          <a href={SITE_LINKS.trackOrder}>Track an order <ArrowUpRight size={14} /></a>
-          <a href="https://www.instagram.com/puffypopseg/" target="_blank" rel="noopener noreferrer"><Instagram size={16} /> Follow the joy</a>
-        </nav>
-      </div>
-      <div className="ss-footer-wordmark" aria-label="Puffy Pops">Puffy Pops<span>&reg;</span></div>
-      <div className="ss-footer-bottom"><p>&copy; {new Date().getFullYear()} Puffy Pops Egypt. Made of happy.</p><a href="#top">Back to the sweet top <ArrowUp size={15} /></a></div>
-    </footer>
+    <section className="cinema-proof" aria-label="Puffy Pops across Egypt">
+      {facts.map((fact, index) => <motion.div key={fact.label} initial={reduceMotion ? false : { opacity: 0, y: 36 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.8, delay: index * 0.08, ease: premiumEase }}><strong>{fact.value}</strong><span>{fact.label}</span></motion.div>)}
+    </section>
+  );
+}
+
+function Closing() {
+  const reduceMotion = useReducedMotion();
+  return (
+    <section className="cinema-closing ss-closing">
+      <motion.div initial={reduceMotion ? false : { opacity: 0, scale: 0.94 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: premiumEase }}>
+        <p className="cinema-kicker">Your next favourite</p>
+        <h2>Ready to make<br />the day <em>puffier?</em></h2>
+        <div className="cinema-actions">
+          <a href={SITE_LINKS.menu} className="cinema-button light">Start an order <span>&#8599;</span></a>
+          <a href={SITE_LINKS.trackOrder} className="cinema-button ghost">Track an order <span>&rarr;</span></a>
+        </div>
+      </motion.div>
+      <span className="ss-signoff" aria-hidden="true">Puffy Pops<span className="ss-signoff-registered">&reg;</span></span>
+    </section>
   );
 }
 
@@ -224,14 +278,19 @@ export default function SoftServeLanding() {
   return (
     <MotionConfig reducedMotion="user">
       <div id="top" className={`ss-site-shell ${reduceMotion ? "ss-reduced-motion" : ""}`} style={theme}>
+        <ScrollProgress />
         <a href="#main-content" className="ss-skip-link">Skip to the good stuff</a>
-        <Header onOrder={() => setOrderOpen(true)} />
+        <SiteHeader sections={heroSections} />
         <main id="main-content" tabIndex={-1}>
           <ProductJourney flavour={flavour} onSelect={setSelected} onOrder={() => setOrderOpen(true)} />
+          <FavouritesRail />
+          <OrderSteps />
           <PuffyMoments />
           <Locations />
+          <Proof />
+          <Closing />
         </main>
-        <Footer />
+        <SiteFooter />
         <OrderDialog open={orderOpen} onClose={() => setOrderOpen(false)} flavour={flavour} onFlavourChange={setSelected} />
       </div>
     </MotionConfig>

@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-css-tags -- Cloudflare needs this explicit static fallback. */
 import type { Metadata } from "next";
-import { Caveat, DM_Sans, DM_Serif_Display, Geist, Shrikhand } from "next/font/google";
+import { Caveat, DM_Sans, DM_Serif_Display, Geist, Pacifico, Shrikhand } from "next/font/google";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,6 +30,13 @@ const softServeHand = Caveat({
   subsets: ["latin"],
 });
 
+// The rounded script used by the Puffy Pops logo, for brand sign-off moments.
+const softServeScript = Pacifico({
+  variable: "--font-pacifico",
+  subsets: ["latin"],
+  weight: "400",
+});
+
 export const metadata: Metadata = {
   title: "Puffy Pops Egypt | Spreading Joy",
   description:
@@ -55,7 +62,7 @@ export default function RootLayout({
         <link rel="stylesheet" href="/assets/soft-serve-landing.css" />
       </head>
       <body
-        className={`${geistSans.variable} ${display.variable} ${softServeDisplay.variable} ${softServeBody.variable} ${softServeHand.variable} antialiased`}
+        className={`${geistSans.variable} ${display.variable} ${softServeDisplay.variable} ${softServeBody.variable} ${softServeHand.variable} ${softServeScript.variable} antialiased`}
       >
         {children}
       </body>

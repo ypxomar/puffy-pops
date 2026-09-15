@@ -49,7 +49,7 @@ test("manager assignment remains compatible with older employee tables", async (
   assert.doesNotMatch(source, /set\(\{ role: "manager"/);
 });
 
-test("home serves the soft-serve landing without the pinned cinema hero", async () => {
+test("home serves the merged soft-serve landing with one shared header and footer", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   const landing = await readFile(
     new URL("../app/soft-serve/SoftServeLanding.tsx", import.meta.url),
@@ -59,13 +59,31 @@ test("home serves the soft-serve landing without the pinned cinema hero", async 
     new URL("../app/soft-serve-landing.css", import.meta.url),
     "utf8",
   );
+  const header = await readFile(
+    new URL("../app/components/SiteHeader.tsx", import.meta.url),
+    "utf8",
+  );
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 
   assert.match(page, /import SoftServeLanding from "\.\/soft-serve\/SoftServeLanding"/);
   assert.match(page, /<SoftServeLanding \/>/);
   assert.doesNotMatch(page, /cinema-|puffy-home-hero|puffy-order-story/);
 
-  assert.match(landing, /className=\{`ss-site-shell/);
+  // The landing reuses the storefront chrome instead of shipping its own.
+  assert.match(landing, /import SiteHeader from "\.\.\/components\/SiteHeader"/);
+  assert.match(landing, /import SiteFooter from "\.\.\/components\/SiteFooter"/);
+  assert.match(landing, /<SiteHeader sections=\{heroSections\} \/>/);
+  assert.match(landing, /<SiteFooter \/>/);
+  assert.doesNotMatch(landing, /function Header\(|function Footer\(/);
+
+  // Storefront home bands were merged into the same page.
+  for (const marker of ["cinema-highlights", "puffy-order-story", "cinema-proof", "cinema-closing"]) {
+    assert.match(landing, new RegExp(marker), marker);
+  }
+
+  // In-page anchors stay opt-in so the other pages keep route navigation.
+  assert.match(header, /sections\?: readonly NavLink\[\]/);
+  assert.match(header, /const links: readonly NavLink\[\] = sections\?\.length/);
 
   // The landing stylesheet only styles its own subtree, so the shared storefront
   // rules (and, in reverse, the landing rules) stay isolated.

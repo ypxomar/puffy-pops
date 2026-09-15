@@ -6,14 +6,21 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import { readCart } from "../cart";
 
-const links = [
+type NavLink = readonly [href: string, label: string];
+
+const routeLinks: readonly NavLink[] = [
   ["/menu", "Menu"],
   ["/track-order", "Track order"],
   ["/locations", "Locations"],
   ["/story", "Our story"],
-] as const;
+];
 
-export default function SiteHeader({ cartCount, onCart }: { cartCount?: number; onCart?: () => void }) {
+/**
+ * `sections` replaces the route links with in-page anchors, which is what the
+ * soft-serve landing page needs; every other page keeps the default navigation.
+ */
+export default function SiteHeader({ cartCount, onCart, sections }: { cartCount?: number; onCart?: () => void; sections?: readonly NavLink[] }) {
+  const links: readonly NavLink[] = sections?.length ? [...sections, ["/menu", "Full menu"]] : routeLinks;
   const reduceMotion = useReducedMotion();
   const [count, setCount] = useState(cartCount ?? 0);
   const [scrolled, setScrolled] = useState(false);
@@ -40,7 +47,7 @@ export default function SiteHeader({ cartCount, onCart }: { cartCount?: number; 
       {onCart ? <button className="cart-button" type="button" onClick={onCart} aria-label={`Open cart with ${count} items`}><span className="bag-icon" aria-hidden="true" /><span>My order</span><strong>{count}</strong></button> : <a className="cart-button" href="/menu"><span className="bag-icon" aria-hidden="true" /><span>Order now</span><strong>{count}</strong></a>}
     </div>
     <AnimatePresence>
-      {menuOpen && <motion.nav className="mobile-navigation" aria-label="Mobile navigation" initial={reduceMotion ? false : { opacity: 0, y: -12, clipPath: "inset(0 0 100% 0 round 0 0 28px 28px)" }} animate={{ opacity: 1, y: 0, clipPath: "inset(0 0 0% 0 round 0 0 28px 28px)" }} exit={reduceMotion ? undefined : { opacity: 0, y: -8, clipPath: "inset(0 0 100% 0 round 0 0 28px 28px)" }} transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}>{links.map(([href, label], index) => <motion.a href={href} key={href} initial={reduceMotion ? false : { opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.045 }}>{label}<span>↗</span></motion.a>)}</motion.nav>}
+      {menuOpen && <motion.nav className="mobile-navigation" aria-label="Mobile navigation" initial={reduceMotion ? false : { opacity: 0, y: -12, clipPath: "inset(0 0 100% 0 round 0 0 28px 28px)" }} animate={{ opacity: 1, y: 0, clipPath: "inset(0 0 0% 0 round 0 0 28px 28px)" }} exit={reduceMotion ? undefined : { opacity: 0, y: -8, clipPath: "inset(0 0 100% 0 round 0 0 28px 28px)" }} transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}>{links.map(([href, label], index) => <motion.a href={href} key={href} onClick={() => setMenuOpen(false)} initial={reduceMotion ? false : { opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.045 }}>{label}<span>↗</span></motion.a>)}</motion.nav>}
     </AnimatePresence>
   </header>;
 }
