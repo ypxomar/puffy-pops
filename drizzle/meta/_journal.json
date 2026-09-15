@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1786272261774,
+      "tag": "0000_long_boomerang",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1786291057668,
+      "tag": "0001_neat_vargas",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786293384709,
+      "tag": "0002_flimsy_vulture",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1786339891656,
+      "tag": "0003_majestic_the_hand",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1786412494517,
+      "tag": "0004_silky_tyrannus",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1786514939197,
+      "tag": "0005_wakeful_warstar",
+      "breakpoints": true
+    }
+  ]
+}

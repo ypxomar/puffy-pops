@@ -1,0 +1,14 @@
+cd C:\path\to\puffy-pops-egypt
+npm install
+npx wrangler login
+npx wrangler secret put ADMIN_SESSION_SECRET
+npx wrangler secret put GOOGLE_MAPS_BROWSER_KEY
+npx wrangler secret put GOOGLE_MAPS_SERVER_KEY
+npm run test
+npm run deploy:cloudflare
+
+Health check after deployment:
+https://YOUR-WORKER.workers.dev/api/app/health
+
+Expected API protocol: 5
+Expected compatibleProtocols: [4,5]

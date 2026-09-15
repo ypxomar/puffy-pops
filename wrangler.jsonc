@@ -1,0 +1,42 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "puffy-pops-egypt",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-02-12",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS",
+    "not_found_handling": "none",
+    "run_worker_first": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "puffy-pops-orders",
+      "migrations_dir": "./drizzle"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "puffy-pops-assets"
+    }
+  ],
+  "vars": {
+    "ADMIN_CODE_HASH_KAFR_ABDO": "33f52a5c9bea599e2a5df0420ab76d187fa2ad35b3719a57cd3f1452ff15549c",
+    "ADMIN_CODE_HASH_SMOUHA": "8d44373297b92f6fc5f0781a3daf6b810ecd0beaa947db738b5b6c827e291b71",
+    "ADMIN_CODE_HASH_GREEN_PLAZA": "fe41ab12de96b113d9ecaba436a17f8d7415252bdbad45fd5e1b4106aa02e525",
+    "ADMIN_CODE_HASH_ARKAN": "6a14fbc075592ccdd919165de5654e9708d7b6e451c4cc8beca3d8db65e8bc97",
+    "ADMIN_CODE_HASH_GOLF_CENTRAL": "223a234c62709af0d729b7e35b432b45001eb206a585e5966630ba551e60ae13",
+    "OWNER_CODE_HASH": "a0fa242fcd09b70814ae246f76c19eacc12fbe71ca10f91e47d9a52716682e20",
+    "PAYMENT_PROVIDER": "not-configured",
+    "CMS_CODE_HASH": "3f5afe35231c429d708176cdf0e5c7664b3e8c43a18ccade04d1d7ed7ee32f7f"
+  },
+  "secrets": {
+    "required": ["ADMIN_SESSION_SECRET", "GOOGLE_MAPS_BROWSER_KEY", "GOOGLE_MAPS_SERVER_KEY"]
+  },
+  "observability": {
+    "enabled": true
+  }
+}
