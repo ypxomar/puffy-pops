@@ -18,13 +18,6 @@ import OrderDialog from "./OrderDialog";
 const FLAVOUR_STORAGE_KEY = "puffy-soft-serve-flavour";
 const premiumEase = [0.22, 1, 0.36, 1] as const;
 
-/** In-page anchors for the shared site header while the customer is on "/". */
-const heroSections = [
-  ["#soft-serve", "The soft serve"],
-  ["#flavours", "Flavours"],
-  ["#find-us", "Find us"],
-] as const;
-
 const highlights = [
   { name: "Nutella", label: "The crowd favorite", image: "/api/media?slot=home-favorite-1", tone: "orange" },
   { name: "White Chocolate", label: "Soft, sweet, unmistakable", image: "/api/media?slot=home-favorite-2", tone: "green" },
@@ -280,7 +273,7 @@ export default function SoftServeLanding() {
       <div id="top" className={`ss-site-shell ${reduceMotion ? "ss-reduced-motion" : ""}`} style={theme}>
         <ScrollProgress />
         <a href="#main-content" className="ss-skip-link">Skip to the good stuff</a>
-        <SiteHeader sections={heroSections} />
+        <SiteHeader />
         <main id="main-content" tabIndex={-1}>
           <ProductJourney flavour={flavour} onSelect={setSelected} onOrder={() => setOrderOpen(true)} />
           <FavouritesRail />

@@ -72,7 +72,7 @@ test("home serves the merged soft-serve landing with one shared header and foote
   // The landing reuses the storefront chrome instead of shipping its own.
   assert.match(landing, /import SiteHeader from "\.\.\/components\/SiteHeader"/);
   assert.match(landing, /import SiteFooter from "\.\.\/components\/SiteFooter"/);
-  assert.match(landing, /<SiteHeader sections=\{heroSections\} \/>/);
+  assert.match(landing, /<SiteHeader \/>/);
   assert.match(landing, /<SiteFooter \/>/);
   assert.doesNotMatch(landing, /function Header\(|function Footer\(/);
 
@@ -81,9 +81,11 @@ test("home serves the merged soft-serve landing with one shared header and foote
     assert.match(landing, new RegExp(marker), marker);
   }
 
-  // In-page anchors stay opt-in so the other pages keep route navigation.
-  assert.match(header, /sections\?: readonly NavLink\[\]/);
-  assert.match(header, /const links: readonly NavLink\[\] = sections\?\.length/);
+  // One shared top bar everywhere: the same route links on every page.
+  assert.match(header, /\["\/menu", "Menu"\]/);
+  assert.match(header, /\["\/story", "Our story"\]/);
+  assert.doesNotMatch(header, /sections/);
+  assert.doesNotMatch(landing, /sections=/);
 
   // The landing stylesheet only styles its own subtree, so the shared storefront
   // rules (and, in reverse, the landing rules) stay isolated.

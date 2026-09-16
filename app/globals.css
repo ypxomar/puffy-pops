@@ -3130,3 +3130,29 @@ body {
   .story-cinema-sticky { padding-left: 20px; padding-right: 20px; }
   .story-cinema-beats { grid-template-columns: 1fr; }
 }
+
+/* Custom 404: same chrome and editorial voice as the rest of the storefront */
+.notfound-home { background: #fffaf2; overflow-x: clip; }
+.notfound-hero { align-items: center; display: grid; gap: clamp(34px,5vw,72px); grid-template-columns: minmax(0,1.02fr) minmax(0,.98fr); min-height: calc(100svh - 170px); padding: clamp(70px,9vw,140px) 7vw; }
+.notfound-copy h1 { color: var(--chocolate); font-family: var(--display); font-size: clamp(56px,8.6vw,142px); font-weight: 400; letter-spacing: -.055em; line-height: .84; margin: 0; }
+.notfound-copy h1 em { color: var(--orange); font-style: normal; }
+.notfound-copy > p:not(.cinema-kicker) { color: var(--muted); font-size: 17px; line-height: 1.7; margin: 30px 0 0; max-width: 520px; }
+.notfound-actions { justify-content: flex-start; margin-top: 36px; }
+.notfound-links { border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 14px 34px; margin-top: 48px; padding-top: 26px; }
+.notfound-links a { color: var(--wine); font-size: 13px; font-weight: 850; }
+.notfound-links a span { color: var(--orange); }
+.notfound-links a:hover { color: var(--orange); }
+.notfound-media { background: radial-gradient(circle at 50% 42%,#fff7e6,#f2c893); border-radius: clamp(34px,4vw,62px); box-shadow: 0 35px 90px rgba(78,30,24,.16); margin: 0; min-height: 560px; overflow: hidden; position: relative; }
+.notfound-media::after { background: linear-gradient(180deg,transparent 48%,rgba(45,18,15,.72)); content: ""; inset: 0; pointer-events: none; position: absolute; }
+.notfound-media img { height: 100%; object-fit: cover; width: 100%; }
+.notfound-media figcaption { bottom: 30px; color: white; display: grid; gap: 6px; left: 32px; position: absolute; z-index: 1; }
+.notfound-media figcaption span { color: var(--peach); font-size: 9px; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
+.notfound-media figcaption strong { font-family: var(--display); font-size: clamp(40px,4.4vw,66px); font-weight: 400; letter-spacing: -.05em; line-height: .88; }
+.notfound-media > i { align-items: center; background: rgba(255,250,242,.92); border-radius: 50%; color: var(--wine); display: flex; font-family: var(--display); font-size: 26px; height: 84px; justify-content: center; position: absolute; right: 30px; top: 30px; width: 84px; z-index: 1; }
+
+@media (max-width: 900px) {
+  .notfound-hero { grid-template-columns: 1fr; min-height: 0; padding-left: 24px; padding-right: 24px; text-align: left; }
+  .notfound-media { min-height: 420px; }
+  .notfound-actions { align-items: stretch; flex-direction: column; }
+  .notfound-actions .cinema-button { width: 100%; }
+}

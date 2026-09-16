@@ -100,15 +100,43 @@ test("renders the storefront without a public admin link", async () => {
     assert.match(html, new RegExp(marker), marker);
   }
 
-  // In-page navigation on "/", route navigation everywhere else.
-  assert.match(html, /<a href="#flavours">Flavours<\/a>/);
-  assert.match(html, /<a href="\/menu">Full menu<\/a>/);
+  // The same storefront top bar on every page: brand, route links and the
+  // cart pill with its live count.
+  assert.match(html, /<nav class="desktop-navigation" aria-label="Main navigation"><a href="\/menu">Menu<\/a><a href="\/track-order">Track order<\/a><a href="\/locations">Locations<\/a><a href="\/story">Our story<\/a><\/nav>/);
+  assert.match(html, /<a class="cart-button" href="\/menu"><span class="bag-icon"[^>]*><\/span><span>Order now<\/span><strong>0<\/strong><\/a>/);
 
   assert.match(html, /<link[^>]+rel=["']stylesheet["'][^>]+href=["']\/assets\/storefront\.css["']/i);
   assert.match(
     html,
     /<link[^>]+rel=["']stylesheet["'][^>]+href=["']\/assets\/soft-serve-landing\.css["']/i,
   );
+});
+
+test("renders the custom 404 page for unknown addresses", async () => {
+  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
+  workerUrl.searchParams.set("not-found-test", `${process.pid}-${Date.now()}`);
+  const { default: worker } = await import(workerUrl.href);
+
+  const response = await worker.fetch(
+    new Request("http://localhost/this-page-melted", { headers: { accept: "text/html" } }),
+    {
+      ADMIN_SESSION_SECRET: testSessionSecret,
+      ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) },
+    },
+    { waitUntil() {}, passThroughOnException() {} },
+  );
+
+  assert.equal(response.status, 404);
+  const html = await response.text();
+  assert.match(html, /class="[^"]*notfound-home/i);
+  assert.match(html, /This page/);
+  assert.match(html, /slipped off/);
+  // The custom page keeps the shared chrome and a way back into the storefront.
+  assert.equal((html.match(/<header/g) ?? []).length, 1);
+  assert.equal((html.match(/<footer/g) ?? []).length, 1);
+  assert.match(html, /<a href="\/menu" class="cinema-button secondary"/);
+  assert.match(html, /<a href="\/locations">Find a branch/);
+  assert.match(html, /<a href="\/track-order">Track an order/);
 });
 
 test("does not publish management pages while keeping their APIs locked", async () => {

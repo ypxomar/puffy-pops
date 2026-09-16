@@ -4,7 +4,9 @@ Source-only Cloudflare Worker website for public ordering. This build deliberate
 
 ## Public features
 
-- One merged home page (`/`): the interactive soft-serve landing carries the storefront header and footer, so there is a single header, a single footer and a single order path across the whole site. Swap the four soft-serve flavours, follow the travelling swirl through the scroll story, browse the favourites rail, read how ordering works, pick a Puffy place and hand the order to the branch on WhatsApp or the full menu.
+- One merged home page (`/`): the interactive soft-serve landing carries the storefront header and footer, so there is a single top bar (brand logo, Menu · Track order · Locations · Our story, cart pill with live count), a single footer and a single order path on every page.
+- Custom 404 page (`app/not-found.tsx`) with the same chrome and voice, pointing customers back at the menu, branches, tracking and phone line. Unknown addresses still answer HTTP 404.
+- Interactive soft serve on the home page: swap the four flavours, follow the travelling swirl through the scroll story, browse the favourites rail, read how ordering works, pick a Puffy place and hand the order to the branch on WhatsApp or the full menu.
 - Cairo/Alexandria menu, locations, story, checkout, tracking and receipt pages.
 - Apple-inspired cinematic pacing in the Puffy Pops brand system: hero storytelling, one meaningful sticky chapter, a manual favorites rail, adaptive navigation and restrained Motion-powered transitions.
 - Complete reduced-motion fallbacks that remove parallax, pinned transformations and automatic large motion without hiding content.

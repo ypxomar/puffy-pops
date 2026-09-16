@@ -6,21 +6,14 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import { readCart } from "../cart";
 
-type NavLink = readonly [href: string, label: string];
-
-const routeLinks: readonly NavLink[] = [
+const links = [
   ["/menu", "Menu"],
   ["/track-order", "Track order"],
   ["/locations", "Locations"],
   ["/story", "Our story"],
-];
+] as const;
 
-/**
- * `sections` replaces the route links with in-page anchors, which is what the
- * soft-serve landing page needs; every other page keeps the default navigation.
- */
-export default function SiteHeader({ cartCount, onCart, sections }: { cartCount?: number; onCart?: () => void; sections?: readonly NavLink[] }) {
-  const links: readonly NavLink[] = sections?.length ? [...sections, ["/menu", "Full menu"]] : routeLinks;
+export default function SiteHeader({ cartCount, onCart }: { cartCount?: number; onCart?: () => void }) {
   const reduceMotion = useReducedMotion();
   const [count, setCount] = useState(cartCount ?? 0);
   const [scrolled, setScrolled] = useState(false);
