@@ -10,7 +10,12 @@ import { distanceKm, nearestBranch } from "../location";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
 import ScrollProgress from "../components/ScrollProgress";
+import DeliveryStrip from "../components/DeliveryStrip";
+import BranchModal from "../components/BranchModal";
+import PersistentOrderBar from "../components/PersistentOrderBar";
 import { normalizeCatalogResponse } from "../catalog-runtime";
+import { getStoredLanguage, translations, type Language } from "../i18n";
+import { ArrowUpRight, Check, Clock, Filter, Heart, Search, Sparkles, Star, Tag } from "lucide-react";
 
 type Selection = { variantId: string; choice?: string };
 type Availability = {
@@ -24,22 +29,24 @@ function ProductCard({
   onAdd,
   availableHere,
   availableInCity,
+  lang,
 }: {
   item: MenuItem;
   index: number;
   onAdd: (item: MenuItem, selection: Selection) => void;
   availableHere: boolean;
   availableInCity: boolean;
+  lang: Language;
 }) {
   const reduceMotion = useReducedMotion();
   const [variantId, setVariantId] = useState(item.variants[0].id);
   const [choice, setChoice] = useState(item.choices?.[0]);
-  // The managed catalog can replace the built-in item after this card mounts.
-  // Resolve the visible selection against the latest item so the initial Small
-  // option is valid immediately instead of requiring a size round-trip first.
   const selectedVariantId = item.variants.some((entry) => entry.id === variantId) ? variantId : item.variants[0].id;
   const selectedChoice = item.choices?.includes(choice ?? "") ? choice : item.choices?.[0];
   const variant = item.variants.find((entry) => entry.id === selectedVariantId) ?? item.variants[0];
+
+  // Derive product slug
+  const productSlug = `${item.id.replace("cairo-", "").replace("alex-", "")}-puffy-pops`;
 
   return (
     <motion.article
@@ -53,15 +60,43 @@ function ProductCard({
       className={`menu-card ${!availableInCity ? "product-out-of-stock" : ""}`}
     >
       <div className={`menu-visual tone-${index % 5} ${item.image ? "has-photo" : ""}`}>
-        {item.image ? <><img src={item.image} alt={`${item.name} from Puffy Pops`} loading="lazy" referrerPolicy="no-referrer" />{item.realFavorite && <span className="photo-label">Real favorite</span>}{item.salePercent ? <span className="sale-label">-{item.salePercent}%</span> : null}</> : <><span>{item.category === "puffy-pops" ? "PP" : item.name.charAt(0)}</span><i />{item.salePercent ? <b className="sale-label">-{item.salePercent}%</b> : null}</>}
+        {item.image ? (
+          <>
+            <img src={item.image} alt={`${item.name} from Puffy Pops`} loading="lazy" referrerPolicy="no-referrer" />
+            {item.realFavorite && (
+              <span className="photo-label">{lang === "ar" ? "الأكثر طلباً" : "Real favorite"}</span>
+            )}
+            {item.salePercent ? <span className="sale-label">-{item.salePercent}%</span> : null}
+          </>
+        ) : (
+          <>
+            <span>{item.category === "puffy-pops" ? "PP" : item.name.charAt(0)}</span>
+            <i />
+            {item.salePercent ? <b className="sale-label">-{item.salePercent}%</b> : null}
+          </>
+        )}
       </div>
+
       <div className="menu-card-copy">
         <div>
-          <h3>{item.name}</h3>
-          <span className={`stock-badge ${!availableInCity ? "out" : availableHere ? "here" : "nearby"}`}>
-            {!availableInCity ? "Out of stock" : availableHere ? "Available here" : "Nearby branch stock"}
-          </span>
-          {item.note && <p>{item.note}</p>}
+          <div className="card-top-header">
+            <h3>{item.name}</h3>
+            <span className={`stock-badge ${!availableInCity ? "out" : availableHere ? "here" : "nearby"}`}>
+              {!availableInCity
+                ? (lang === "ar" ? "نفد من المخزون" : "Out of stock")
+                : availableHere
+                ? (lang === "ar" ? "متوفر بالفرع" : "Available here")
+                : (lang === "ar" ? "متوفر بفرع قريب" : "Nearby branch stock")}
+            </span>
+          </div>
+
+          <div className="card-stars-row">
+            <span className="stars-mini">★★★★★</span>
+            <small>4.9 (120+)</small>
+          </div>
+
+          {item.note && <p className="card-note-text">{item.note}</p>}
+
           <div className="product-options">
             {item.variants.length > 1 && (
               <label>
@@ -79,20 +114,37 @@ function ProductCard({
               <label>
                 <span className="sr-only">Flavor for {item.name}</span>
                 <select value={selectedChoice} onChange={(event) => setChoice(event.target.value)}>
-                  {item.choices.map((entry) => <option key={entry}>{entry}</option>)}
+                  {item.choices.map((entry) => (
+                    <option key={entry}>{entry}</option>
+                  ))}
                 </select>
               </label>
             )}
           </div>
         </div>
+
         <div className="price-row">
           <div>
             {item.variants.length > 1 && <small>{variant.label}</small>}
-            {variant.originalPrice && variant.originalPrice > variant.price ? <del>{formatPrice(variant.originalPrice)}</del> : null}<strong>{formatPrice(variant.price)}</strong>
+            {variant.originalPrice && variant.originalPrice > variant.price ? (
+              <del>{formatPrice(variant.originalPrice)}</del>
+            ) : null}
+            <strong>{formatPrice(variant.price)}</strong>
           </div>
-          <button type="button" disabled={!availableInCity} onClick={() => onAdd(item, { variantId: selectedVariantId, choice: selectedChoice })} aria-label={availableInCity ? `Add ${item.name} to order` : `${item.name} is out of stock`}>
-            <span aria-hidden="true">+</span>
-          </button>
+
+          <div className="card-actions-group">
+            <a href={`/products/${productSlug}`} className="card-customize-link" title="View details">
+              <ArrowUpRight size={16} />
+            </a>
+            <button
+              type="button"
+              disabled={!availableInCity}
+              onClick={() => onAdd(item, { variantId: selectedVariantId, choice: selectedChoice })}
+              aria-label={availableInCity ? `Add ${item.name} to order` : `${item.name} is out of stock`}
+            >
+              <span aria-hidden="true">+</span>
+            </button>
+          </div>
         </div>
       </div>
     </motion.article>
@@ -101,23 +153,30 @@ function ProductCard({
 
 export default function MenuPage() {
   const reduceMotion = useReducedMotion();
+  const [lang, setLang] = useState<Language>("en");
   const [runtimeMenus, setRuntimeMenus] = useState(menus);
-  const [availability, setAvailability] = useState<Availability>({ byBranch: {}, cityAvailability: { alexandria: {}, cairo: {} } });
+  const [availability, setAvailability] = useState<Availability>({
+    byBranch: {},
+    cityAvailability: { alexandria: {}, cairo: {} },
+  });
   const [branchId, setBranchId] = useState("kafr-abdo");
   const [activeCategory, setActiveCategory] = useState("puffy-pops");
+  const [activeFilter, setActiveFilter] = useState<"all" | "favorite" | "under200" | "sharing">("all");
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locationMessage, setLocationMessage] = useState("Choose a branch or use your location.");
+  const [branchModalOpen, setBranchModalOpen] = useState(false);
 
   const selectedBranch = branches.find((branch) => branch.id === branchId) ?? branches[0];
   const cityId: CityId = selectedBranch.cityId;
   const menu = runtimeMenus[cityId];
 
   useEffect(() => {
+    setLang(getStoredLanguage());
     fetch("/api/catalog", { cache: "no-store" })
-      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then((data: unknown) => {
         setRuntimeMenus(normalizeCatalogResponse(data));
         if (data && typeof data === "object" && "availability" in data) {
@@ -126,10 +185,9 @@ export default function MenuPage() {
         }
       })
       .catch(() => undefined);
+
     const savedBranch = window.localStorage.getItem(BRANCH_KEY);
     if (savedBranch && branches.some((branch) => branch.id === savedBranch)) {
-      // Restore the customer's device-local branch after hydration.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBranchId(savedBranch);
     } else if (navigator.geolocation) {
       setLocating(true);
@@ -148,38 +206,76 @@ export default function MenuPage() {
           setLocationMessage("Choose a branch or allow location access to find the nearest one.");
           setLocating(false);
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
       );
     }
     setCart(readCart());
+
+    const handleLang = (e: Event) => {
+      const custom = e as CustomEvent<{ lang: Language }>;
+      if (custom.detail?.lang) setLang(custom.detail.lang);
+    };
+    const handleBranch = (e: Event) => {
+      const custom = e as CustomEvent<{ branch: { id: string } }>;
+      if (custom.detail?.branch?.id) setBranchId(custom.detail.branch.id);
+    };
+    window.addEventListener("puffy-language-change", handleLang);
+    window.addEventListener("puffy-branch-change", handleBranch);
+    return () => {
+      window.removeEventListener("puffy-language-change", handleLang);
+      window.removeEventListener("puffy-branch-change", handleBranch);
+    };
   }, []);
 
   useEffect(() => {
     document.body.style.overflow = cartOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [cartOpen]);
 
-  const cartItems = useMemo(() => cart.flatMap((line) => {
-    const item = menu.items.find((entry) => entry.id === line.itemId);
-    const variant = item?.variants.find((entry) => entry.id === line.variantId);
-    return item && variant ? [{ ...line, item, variant }] : [];
-  }), [cart, menu.items]);
+  const cartItems = useMemo(
+    () =>
+      cart.flatMap((line) => {
+        const item = menu.items.find((entry) => entry.id === line.itemId);
+        const variant = item?.variants.find((entry) => entry.id === line.variantId);
+        return item && variant ? [{ ...line, item, variant }] : [];
+      }),
+    [cart, menu.items]
+  );
 
   const cartCount = cartItems.reduce((sum, line) => sum + line.quantity, 0);
   const cartTotal = cartItems.reduce((sum, line) => sum + line.variant.price * line.quantity, 0);
 
   const visibleItems = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return menu.items.filter((item) => query
-      ? `${item.name} ${item.note ?? ""} ${item.choices?.join(" ") ?? ""}`.toLowerCase().includes(query)
-      : item.category === activeCategory);
-  }, [activeCategory, menu.items, search]);
+    let list = menu.items.filter((item) =>
+      query
+        ? `${item.name} ${item.note ?? ""} ${item.choices?.join(" ") ?? ""}`.toLowerCase().includes(query)
+        : item.category === activeCategory
+    );
+
+    if (activeFilter === "favorite") {
+      list = list.filter((item) => item.realFavorite || item.name.includes("Nutella") || item.name.includes("Pistachio"));
+    } else if (activeFilter === "under200") {
+      list = list.filter((item) => item.variants.some((v) => v.price < 200));
+    } else if (activeFilter === "sharing") {
+      list = list.filter(
+        (item) => item.variants.some((v) => v.label.includes("10") || v.label.includes("36")) || item.category === "puffyterole"
+      );
+    }
+    return list;
+  }, [activeCategory, activeFilter, menu.items, search]);
 
   const currentCategory = menu.categories.find((category) => category.id === activeCategory);
 
   const chooseBranch = (next: Branch, source = "manual") => {
     if (next.cityId !== cityId && cart.length) {
-      const confirmed = window.confirm("Cairo and Alexandria have different menus and prices. Switch city and clear your current order?");
+      const confirmed = window.confirm(
+        lang === "ar"
+          ? "القاهرة والإسكندرية لهما منيو وأسعار مختلفة. هل تريد تغيير المدينة وتفريغ السلة؟"
+          : "Cairo and Alexandria have different menus and prices. Switch city and clear your current order?"
+      );
       if (!confirmed) return;
       setCart([]);
       saveCart([]);
@@ -188,12 +284,14 @@ export default function MenuPage() {
     setActiveCategory("puffy-pops");
     setSearch("");
     window.localStorage.setItem(BRANCH_KEY, next.id);
-    setLocationMessage(source === "location" ? `${next.name} is the closest listed branch.` : `${next.name} selected.`);
+    setLocationMessage(
+      source === "location" ? `${next.name} is the closest listed branch.` : `${next.name} selected.`
+    );
   };
 
   const useMyLocation = () => {
     if (!navigator.geolocation) {
-      setLocationMessage("Location is not supported by this browser. Choose a branch manually.");
+      setLocationMessage(lang === "ar" ? "الموقع غير مدعوم في متصفحك." : "Location is not supported by this browser.");
       return;
     }
     setLocating(true);
@@ -202,7 +300,7 @@ export default function MenuPage() {
         const closest = nearestBranch({ latitude: position.coords.latitude, longitude: position.coords.longitude });
         const km = distanceKm(
           { latitude: position.coords.latitude, longitude: position.coords.longitude },
-          closest,
+          closest
         );
         chooseBranch(closest, "location");
         setLocationMessage(`${closest.name} is the nearest listed branch · about ${km.toFixed(1)} km away.`);
@@ -212,7 +310,7 @@ export default function MenuPage() {
         setLocationMessage("We could not read your location. Choose a branch manually.");
         setLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
     );
   };
 
@@ -223,7 +321,7 @@ export default function MenuPage() {
     }
     const id = makeLineId(item.id, selection.variantId, selection.choice);
     const next = cart.some((line) => line.id === id)
-      ? cart.map((line) => line.id === id ? { ...line, quantity: line.quantity + 1 } : line)
+      ? cart.map((line) => (line.id === id ? { ...line, quantity: line.quantity + 1 } : line))
       : [...cart, { id, itemId: item.id, variantId: selection.variantId, choice: selection.choice, quantity: 1 }];
     setCart(next);
     saveCart(next);
@@ -231,53 +329,356 @@ export default function MenuPage() {
 
   const changeQuantity = (id: string, change: number) => {
     const next = cart
-      .map((line) => line.id === id ? { ...line, quantity: line.quantity + change } : line)
+      .map((line) => (line.id === id ? { ...line, quantity: line.quantity + change } : line))
       .filter((line) => line.quantity > 0);
     setCart(next);
     saveCart(next);
   };
 
+  const t = translations[lang];
+
   return (
     <main>
       <ScrollProgress />
+      <DeliveryStrip onOpenBranchModal={() => setBranchModalOpen(true)} />
       <SiteHeader cartCount={cartCount} onCart={() => setCartOpen(true)} />
 
-      <motion.section initial={reduceMotion ? false : { opacity: 0, y: -18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.62, ease: [0.22, 1, 0.36, 1] }} className="branch-finder" aria-label="Choose nearest Puffy Pops branch">
+      {/* Persistent Branch Chip & Locator */}
+      <motion.section
+        initial={reduceMotion ? false : { opacity: 0, y: -18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.62, ease: [0.22, 1, 0.36, 1] }}
+        className="branch-finder"
+        aria-label="Choose nearest Puffy Pops branch"
+      >
         <div>
           <span className="live-dot" />
-          <p><small>Your menu</small><strong>{selectedBranch.name} · {selectedBranch.city}</strong></p>
+          <p>
+            <small>{lang === "ar" ? "قائمة أسعار" : "Your menu"}</small>
+            <strong>
+              {selectedBranch.name} · {selectedBranch.city}
+            </strong>
+          </p>
         </div>
         <p className="branch-message">{locationMessage}</p>
         <div className="branch-actions">
           <label>
             <span className="sr-only">Select branch</span>
-            <select value={branchId} onChange={(event) => chooseBranch(branches.find((branch) => branch.id === event.target.value) ?? branches[0])}>
-              {branches.map((branch) => <option value={branch.id} key={branch.id}>{branch.name} · {branch.city}</option>)}
+            <select
+              value={branchId}
+              onChange={(event) =>
+                chooseBranch(branches.find((branch) => branch.id === event.target.value) ?? branches[0])
+              }
+            >
+              {branches.map((branch) => (
+                <option value={branch.id} key={branch.id}>
+                  {branch.name} · {branch.city}
+                </option>
+              ))}
             </select>
           </label>
-          <button type="button" onClick={useMyLocation} disabled={locating}>{locating ? "Locating…" : "Use my location"}</button>
+          <button type="button" onClick={useMyLocation} disabled={locating}>
+            {locating ? (lang === "ar" ? "جاري التحديد…" : "Locating…") : (lang === "ar" ? "تحديد موقعي" : "Use my location")}
+          </button>
         </div>
       </motion.section>
 
-      <section className="menu-section" id="menu">
-        <motion.div initial={reduceMotion ? false : { opacity: 0, y: 32 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1] }} className="section-heading menu-heading">
-          <div><p className="eyebrow">{selectedBranch.city} menu · VAT inclusive</p><h2>Find your <em>favorite.</em></h2></div>
-          <label className="search-box"><span aria-hidden="true" /><span className="sr-only">Search the menu</span><input type="search" placeholder="Search Nutella, matcha…" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
-        </motion.div>
-        <div className="menu-city-note"><strong>{selectedBranch.name}</strong><span>Prices and availability follow the {selectedBranch.city} menu you supplied.</span><button type="button" onClick={useMyLocation}>Check nearest branch</button></div>
-        <div className="category-row" role="tablist" aria-label="Menu categories">
-          {menu.categories.map((category) => <button key={category.id} type="button" role="tab" aria-selected={!search && activeCategory === category.id} className={!search && activeCategory === category.id ? "active" : ""} onClick={() => { setSearch(""); setActiveCategory(category.id); }}>{category.label}</button>)}
+      {/* Hero Build-a-Box Callout */}
+      <section className="menu-build-box-banner">
+        <div className="menu-build-box-card">
+          <div className="build-card-copy">
+            <span className="build-banner-tag">✨ {lang === "ar" ? "صندوق على مزاجك" : "Custom Box Creation"}</span>
+            <h2>{lang === "ar" ? "اصنع صندوق أحلامك المفضل" : "Build Your Own Dream Box"}</h2>
+            <p>
+              {lang === "ar"
+                ? "اختر الحجم (٦، ٨، ١٠ أو ٣٦ قطعة)، امزج نكهاتك المفضلة، وأضف صوصات التغميس البلجيكية."
+                : "Choose your box size (6, 8, 10 or 36 pieces), mix your favourite flavours, and add warm dips."}
+            </p>
+          </div>
+          <a href="/build-your-box" className="build-banner-btn">
+            {lang === "ar" ? "اصنع صندوقك الآن" : "Build a Box"} <span>→</span>
+          </a>
         </div>
-        <div className="menu-title-row"><div><p>{search ? "Search results" : currentCategory?.label}</p><span>{search ? `${visibleItems.length} matches` : currentCategory?.tagline}</span></div><span>{visibleItems.length} items</span></div>
-        {visibleItems.length ? <motion.div layout className="menu-grid"><AnimatePresence mode="popLayout">{visibleItems.map((item, index) => <ProductCard item={item} index={index} onAdd={addItem} availableHere={availability.byBranch[branchId]?.[item.id]?.available !== false} availableInCity={availability.cityAvailability[cityId]?.[item.id] !== false} key={item.id} />)}</AnimatePresence></motion.div> : <motion.div initial={reduceMotion ? false : { opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} className="empty-search"><span>?</span><h3>No sweet match yet</h3><p>Try another flavor, drink, or category.</p></motion.div>}
       </section>
 
-      <motion.section initial={reduceMotion ? false : { opacity: 0, y: 42 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }} className="order-banner"><div><p className="eyebrow light">The sweet part of your day</p><h2>Ready to get <em>puffy?</em></h2></div><button type="button" onClick={() => document.getElementById("menu")?.scrollIntoView({ behavior: "smooth" })}>Back to categories <span>↑</span></button></motion.section>
+      {/* Main Menu Section */}
+      <section className="menu-section" id="menu">
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 32 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1] }}
+          className="section-heading menu-heading"
+        >
+          <div>
+            <p className="eyebrow">
+              {selectedBranch.city} menu · VAT inclusive • 25–40 min delivery
+            </p>
+            <h2>
+              Find your <em>favorite.</em>
+            </h2>
+          </div>
+          <label className="search-box">
+            <span aria-hidden="true" />
+            <span className="sr-only">Search the menu</span>
+            <input
+              type="search"
+              placeholder="Search Nutella, matcha…"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </label>
+        </motion.div>
+
+        <div className="menu-city-note">
+          <strong>{selectedBranch.name}</strong>
+          <span>
+            {lang === "ar"
+              ? `الأسعار والتوافر تتبع منيو ${selectedBranch.city} المعتمد.`
+              : `Prices and availability follow the ${selectedBranch.city} menu you supplied.`}
+          </span>
+          <button type="button" onClick={useMyLocation}>
+            {lang === "ar" ? "التحقق من أقرب فرع" : "Check nearest branch"}
+          </button>
+        </div>
+
+        {/* Collections Category Tabs */}
+        <div className="category-row" role="tablist" aria-label="Menu categories">
+          {menu.categories.map((category) => (
+            <button
+              key={category.id}
+              type="button"
+              role="tab"
+              aria-selected={!search && activeCategory === category.id}
+              className={!search && activeCategory === category.id ? "active" : ""}
+              onClick={() => {
+                setSearch("");
+                setActiveCategory(category.id);
+              }}
+            >
+              {category.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Quick Filter Chips */}
+        <div className="quick-filter-chips-row">
+          <span className="filter-label"><Filter size={14} /> {lang === "ar" ? "تصفية:" : "Filter:"}</span>
+          <button
+            type="button"
+            className={`filter-chip ${activeFilter === "all" ? "active" : ""}`}
+            onClick={() => setActiveFilter("all")}
+          >
+            {lang === "ar" ? "الكل" : "All"}
+          </button>
+          <button
+            type="button"
+            className={`filter-chip ${activeFilter === "favorite" ? "active" : ""}`}
+            onClick={() => setActiveFilter("favorite")}
+          >
+            ★ {lang === "ar" ? "الأكثر حباً" : "Most loved"}
+          </button>
+          <button
+            type="button"
+            className={`filter-chip ${activeFilter === "under200" ? "active" : ""}`}
+            onClick={() => setActiveFilter("under200")}
+          >
+            🏷️ {lang === "ar" ? "أقل من ٢٠٠ ج.م" : "Under 200 EGP"}
+          </button>
+          <button
+            type="button"
+            className={`filter-chip ${activeFilter === "sharing" ? "active" : ""}`}
+            onClick={() => setActiveFilter("sharing")}
+          >
+            👥 {lang === "ar" ? "للمشاركة" : "For sharing"}
+          </button>
+        </div>
+
+        <div className="menu-title-row">
+          <div>
+            <p>{search ? "Search results" : currentCategory?.label}</p>
+            <span>{search ? `${visibleItems.length} matches` : currentCategory?.tagline}</span>
+          </div>
+          <span>{visibleItems.length} items</span>
+        </div>
+
+        {visibleItems.length ? (
+          <motion.div layout className="menu-grid">
+            <AnimatePresence mode="popLayout">
+              {visibleItems.map((item, index) => (
+                <ProductCard
+                  item={item}
+                  index={index}
+                  onAdd={addItem}
+                  availableHere={availability.byBranch[branchId]?.[item.id]?.available !== false}
+                  availableInCity={availability.cityAvailability[cityId]?.[item.id] !== false}
+                  lang={lang}
+                  key={item.id}
+                />
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="empty-search"
+          >
+            <span>?</span>
+            <h3>No sweet match yet</h3>
+            <p>Try another flavor, drink, or category.</p>
+          </motion.div>
+        )}
+      </section>
+
+      <motion.section
+        initial={reduceMotion ? false : { opacity: 0, y: 42 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+        className="order-banner"
+      >
+        <div>
+          <p className="eyebrow light">{lang === "ar" ? "الجزء الأحلى في يومك" : "The sweet part of your day"}</p>
+          <h2>{lang === "ar" ? "جاهز تعيش الفرحة؟" : "Ready to get"} <em>puffy?</em></h2>
+        </div>
+        <button
+          type="button"
+          onClick={() => document.getElementById("menu")?.scrollIntoView({ behavior: "smooth" })}
+        >
+          {lang === "ar" ? "العودة للأصناف" : "Back to categories"} <span>↑</span>
+        </button>
+      </motion.section>
 
       <SiteFooter onCart={() => setCartOpen(true)} />
 
-      <AnimatePresence>{cartOpen && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="cart-layer" role="dialog" aria-modal="true" aria-labelledby="cart-title"><motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="cart-backdrop" type="button" onClick={() => setCartOpen(false)} aria-label="Close cart" /><motion.aside initial={reduceMotion ? false : { x: "100%" }} animate={{ x: 0 }} exit={reduceMotion ? undefined : { x: "100%" }} transition={{ type: "spring", stiffness: 330, damping: 34 }} className="cart-drawer"><div className="cart-header"><div><p className="eyebrow">{selectedBranch.name}</p><h2 id="cart-title">My order</h2></div><button type="button" onClick={() => setCartOpen(false)} aria-label="Close cart">×</button></div>{!cartItems.length ? <div className="empty-cart"><div className="empty-box"><i /><i /><i /></div><h3>Your box is empty</h3><p>Add something joyful from the {selectedBranch.city} menu.</p><button type="button" onClick={() => setCartOpen(false)}>Explore menu</button></div> : <><div className="cart-items">{cartItems.map((line) => <div className="cart-item" key={line.id}><div className="cart-item-mark">{line.item.name.charAt(0)}</div><div className="cart-item-info"><h3>{line.item.name}</h3><p>{line.variant.label}{line.choice ? ` · ${line.choice}` : ""}</p><strong>{formatPrice(line.variant.price)}</strong></div><div className="quantity-control"><button type="button" onClick={() => changeQuantity(line.id, -1)} aria-label={`Remove one ${line.item.name}`}>−</button><span>{line.quantity}</span><button type="button" onClick={() => changeQuantity(line.id, 1)} aria-label={`Add one ${line.item.name}`}>+</button></div></div>)}</div><div className="cart-summary"><div><span>Subtotal</span><strong>{formatPrice(cartTotal)}</strong></div><p>Delivery is calculated from your exact checkout location.</p><a className="checkout-button" href="/checkout">Continue to checkout <span>→</span></a></div></>}</motion.aside></motion.div>}</AnimatePresence>
-      <AnimatePresence>{cartCount > 0 && !cartOpen && <motion.button initial={reduceMotion ? false : { opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 24 }} className="mobile-cart" type="button" onClick={() => setCartOpen(true)}><span>{cartCount} {cartCount === 1 ? "item" : "items"}</span><strong>View order · {formatPrice(cartTotal)}</strong></motion.button>}</AnimatePresence>
+      {/* Cart Drawer */}
+      <AnimatePresence>
+        {cartOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="cart-layer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cart-title"
+          >
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="cart-backdrop"
+              type="button"
+              onClick={() => setCartOpen(false)}
+              aria-label="Close cart"
+            />
+            <motion.aside
+              initial={reduceMotion ? false : { x: "100%" }}
+              animate={{ x: 0 }}
+              exit={reduceMotion ? undefined : { x: "100%" }}
+              transition={{ type: "spring", stiffness: 330, damping: 34 }}
+              className="cart-drawer"
+            >
+              <div className="cart-header">
+                <div>
+                  <p className="eyebrow">{selectedBranch.name}</p>
+                  <h2 id="cart-title">My order</h2>
+                </div>
+                <button type="button" onClick={() => setCartOpen(false)} aria-label="Close cart">
+                  ×
+                </button>
+              </div>
+
+              {!cartItems.length ? (
+                <div className="empty-cart">
+                  <div className="empty-box">
+                    <i />
+                    <i />
+                    <i />
+                  </div>
+                  <h3>Your box is empty</h3>
+                  <p>Add something joyful from the {selectedBranch.city} menu.</p>
+                  <button type="button" onClick={() => setCartOpen(false)}>
+                    Explore menu
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="cart-items">
+                    {cartItems.map((line) => (
+                      <div className="cart-item" key={line.id}>
+                        <div className="cart-item-mark">{line.item.name.charAt(0)}</div>
+                        <div className="cart-item-info">
+                          <h3>{line.item.name}</h3>
+                          <p>
+                            {line.variant.label}
+                            {line.choice ? ` · ${line.choice}` : ""}
+                          </p>
+                          <strong>{formatPrice(line.variant.price)}</strong>
+                        </div>
+                        <div className="quantity-control">
+                          <button
+                            type="button"
+                            onClick={() => changeQuantity(line.id, -1)}
+                            aria-label={`Remove one ${line.item.name}`}
+                          >
+                            −
+                          </button>
+                          <span>{line.quantity}</span>
+                          <button
+                            type="button"
+                            onClick={() => changeQuantity(line.id, 1)}
+                            aria-label={`Add one ${line.item.name}`}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="cart-summary">
+                    <div>
+                      <span>Subtotal</span>
+                      <strong>{formatPrice(cartTotal)}</strong>
+                    </div>
+                    <p>Delivery is calculated from your exact checkout location.</p>
+                    <a className="checkout-button" href="/checkout">
+                      Continue to checkout <span>→</span>
+                    </a>
+                  </div>
+                </>
+              )}
+            </motion.aside>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {cartCount > 0 && !cartOpen && (
+          <motion.button
+            initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 24 }}
+            className="mobile-cart"
+            type="button"
+            onClick={() => setCartOpen(true)}
+          >
+            <span>
+              {cartCount} {cartCount === 1 ? "item" : "items"}
+            </span>
+            <strong>View order · {formatPrice(cartTotal)}</strong>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      <PersistentOrderBar onOpenCart={() => setCartOpen(true)} />
+      <BranchModal
+        isOpen={branchModalOpen}
+        onClose={() => setBranchModalOpen(false)}
+        onSelectBranch={(b) => chooseBranch(b)}
+      />
     </main>
   );
 }

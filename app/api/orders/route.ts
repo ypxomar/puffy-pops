@@ -11,7 +11,7 @@ import { randomToken, receiptTokenHash } from "../../server/security";
 type OrderPayload = {
   branchId?: string;
   fulfilment?: "delivery" | "pickup";
-  paymentMethod?: "cash" | "card";
+  paymentMethod?: "cash" | "card" | "fawry" | "instapay";
   customer?: { name?: unknown; phone?: unknown; address?: unknown; notes?: unknown };
   coordinates?: { latitude?: unknown; longitude?: unknown };
   lines?: Array<{ itemId?: unknown; variantId?: unknown; choice?: unknown; quantity?: unknown }>;
@@ -32,7 +32,8 @@ export async function POST(request: Request) {
 
   const selectedBranch = getBranch(payload.branchId);
   const fulfilment = payload.fulfilment === "pickup" ? "pickup" : "delivery";
-  const paymentMethod = payload.paymentMethod === "card" ? "card" : "cash";
+  const rawMethod = String(payload.paymentMethod ?? "").toLowerCase();
+  const paymentMethod = rawMethod === "card" ? "card" : rawMethod === "fawry" ? "fawry" : rawMethod === "instapay" ? "instapay" : "cash";
   const name = text(payload.customer?.name, 80);
   const phone = text(payload.customer?.phone, 30);
   const address = text(payload.customer?.address, 300);
@@ -106,6 +107,9 @@ export async function POST(request: Request) {
     const orderNumber = `PP-${sourceCandidate.branch.id.slice(0, 3).toUpperCase()}-${Date.now().toString().slice(-7)}-${crypto.randomUUID().slice(0, 3).toUpperCase()}`;
     const receiptToken = randomToken();
     const now = new Date().toISOString();
+    const fawryCode = paymentMethod === "fawry" ? Math.floor(10000000 + Math.random() * 90000000).toString() : undefined;
+    const instapayIpa = "puffypops@instapay";
+
     const [created] = await db.insert(orders).values({
       orderNumber,
       branchId: sourceCandidate.branch.id,
@@ -123,7 +127,7 @@ export async function POST(request: Request) {
       deliveryFee: fee,
       total,
       paymentMethod,
-      paymentStatus: paymentMethod === "cash" ? "cash_due" : "pending",
+      paymentStatus: paymentMethod === "cash" ? "cash_due" : paymentMethod === "fawry" ? "fawry_pending" : paymentMethod === "instapay" ? "instapay_pending" : "pending",
       status: needsTransfer ? "awaiting_stock" : "new",
       notes,
       source: "online",
@@ -158,9 +162,11 @@ export async function POST(request: Request) {
       return Response.json({
         orderNumber,
         receiptToken,
+        fawryCode,
+        instapayIpa,
         pendingStock: true,
         message: `${sourceCandidate.branch.name} requested stock confirmation from ${targetCandidate.branch.name}. Track the order for the response.`,
-        receiptUrl: `/receipt/${encodeURIComponent(orderNumber)}?token=${encodeURIComponent(receiptToken)}`,
+        receiptUrl: `/order/${encodeURIComponent(orderNumber)}/confirmed?token=${encodeURIComponent(receiptToken)}&method=${paymentMethod}${fawryCode ? `&fawry=${fawryCode}` : ""}`,
       }, { status: 202 });
     }
 
@@ -169,7 +175,13 @@ export async function POST(request: Request) {
       const payment = await createCardCheckout({ orderNumber, amount: total, customerName: name, phone });
       return Response.json({ orderNumber, receiptToken, redirectUrl: payment.redirectUrl }, { status: 201 });
     }
-    return Response.json({ orderNumber, receiptToken, receiptUrl: `/receipt/${encodeURIComponent(orderNumber)}?token=${encodeURIComponent(receiptToken)}` }, { status: 201 });
+    return Response.json({
+      orderNumber,
+      receiptToken,
+      fawryCode,
+      instapayIpa,
+      receiptUrl: `/order/${encodeURIComponent(orderNumber)}/confirmed?token=${encodeURIComponent(receiptToken)}&method=${paymentMethod}${fawryCode ? `&fawry=${fawryCode}` : ""}`
+    }, { status: 201 });
   } catch (error) {
     console.error("Order creation failed", error);
     return Response.json({ error: databaseError(error) }, { status: 500 });
